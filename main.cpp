@@ -279,11 +279,13 @@ int main(){
 		kinect.getBGRVideo(video);
 		
 		if(doApril){
+			cv::cvtColor(video, gray, cv::COLOR_BGR2GRAY);
+
 			image_u8_t im = {
 				.width = winCols,
 				.height = winRows,
 				.stride = winCols,
-				.buf = video.data
+				.buf = gray.data
 			};
 			zarray_t* detections = apriltag_detector_detect(td, &im);
 
@@ -291,9 +293,10 @@ int main(){
 				apriltag_detection_t* det;
 				zarray_get(detections, i, &det);
 
-				std::cout << startTime-timeMS() << ": " << "Found Tag " << det->id << " with hamming of " << det->hamming << std::endl;
-			
-				cv::circle(video, cv::Point(det->c[0], det->c[1]), 10, cv::Scalar(255, 0, 0), cv::FILLED, cv::LINE_8);
+				if(det->hamming == 0){	
+					std::cout << startTime-timeMS() << ": " << "Found Tag " << det->id << std::endl;
+					cv::circle(video, cv::Point(det->c[0], det->c[1]), 10, cv::Scalar(255, 0, 0), cv::FILLED, cv::LINE_8);
+				}
 			}
 		}
 		
