@@ -1,4 +1,6 @@
 #include <cmath>
+#include <math.h>
+#include <string>
 #include <iostream>
 #include <mutex>
 #include <sys/select.h>
@@ -293,9 +295,24 @@ int main(){
 				apriltag_detection_t* det;
 				zarray_get(detections, i, &det);
 
-				if(det->hamming == 0){	
-					std::cout << startTime-timeMS() << ": " << "Found Tag " << det->id << std::endl;
+				if(det->hamming == 0){
+					double R[3][3];
+					for (int i = 0; i < 3; i++) {
+			    	for (int j = 0; j < 3; j++) {
+        			R[i][j] = det->H->data[i*3 + j];
+    				}
+					}
+
+					double yaw = atan2(R[1][0], R[0][0]);
+					// degrees is type-casted for text spacing reasons, for accuracy use radians or a double for degrees
+					int yawDeg = yaw * (180/M_PI);
+//					double pitch = atan2(-R[2][0], sqrt(R[2][1] * R[2][1] + R[2][2] * R[2][2]));
+//					double roll = atan2(R[2][1], R[2][2]);
+
 					cv::circle(video, cv::Point(det->c[0], det->c[1]), 10, cv::Scalar(255, 0, 0), cv::FILLED, cv::LINE_8);
+					cv::rectangle(video, cv::Point(det->p[0][0], det->p[0][1]), cv::Point(det->p[2][0], det->p[2][1]), cv::Scalar(0, 255, 255));
+					// couldnt fit yaw in radians and degrees so i just picked degrees
+					cv::putText(video, ("Tag: " + std::to_string(det->id) + " Yaw: " + std::to_string(yawDeg) + " deg").c_str(), cv::Point(det->c[0], det->c[1]), cv::FONT_HERSHEY_DUPLEX, 1.0, CV_RGB(255, 255, 255), 2);
 				}
 			}
 		}
