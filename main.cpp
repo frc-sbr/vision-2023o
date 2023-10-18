@@ -129,7 +129,7 @@ public:
             heat_map.at<cv::Vec3b>(r, c)[G] = 0;
             heat_map.at<cv::Vec3b>(r, c)[R] = (255 - fine_heat);
             break;
-          // uncategorized values are rendered gray
+          // uncategorized values are rendered black 
           default:
             heat_map.at<cv::Vec3b>(r, c)[B] = 0;
             heat_map.at<cv::Vec3b>(r, c)[G] = 0;
@@ -153,13 +153,13 @@ public:
     return videoResolutionToColumnsAndRows(getVideoResolution(), _cols, _rows);
   }
 
+  cv::Mat _live_depth_feed;
 private:
   uint16_t _gamma[2048];
   std::mutex _rgb_mutex;
   std::mutex _depth_mutex;
   bool _rgb_frame_available;
   bool _depth_frame_available;
-  cv::Mat _live_depth_feed;
   cv::Mat _live_rgb_feed;
 
   int setVideoResolution(freenect_resolution _resolution)
@@ -266,7 +266,13 @@ int main(){
 
 	cv::Mat video(cv::Size(winCols,winRows), CV_8UC3, cv::Scalar(0));
 	cv::Mat gray;
-	cv::Mat depthHeatMap(cv::Size(winCols,winRows), CV_8UC3);
+//	cv::Mat depthHeatMap(cv::Size(winCols,winRows), CV_8UC3);
+
+	// the tags irl size in inches
+	const double tagPhysicalSize = 6.0;
+
+	// focal length of the kinect camera in pixels
+	const double focalLength = 525.0;
 
 //	namedWindow("depth_heat_map", cv::WINDOW_AUTOSIZE);	
 	namedWindow("video", cv::WINDOW_AUTOSIZE);	
@@ -306,13 +312,18 @@ int main(){
 					double yaw = atan2(R[1][0], R[0][0]);
 					// degrees is type-casted for text spacing reasons, for accuracy use radians or a double for degrees
 					int yawDeg = yaw * (180/M_PI);
+
+					double tagPixelSize = std::max(abs(det->p[0][1] - det->p[1][1]), abs(det->p[1][0] - det->p[2][0]));
+
+					double dist = focalLength * (tagPhysicalSize/tagPixelSize);
+
 //					double pitch = atan2(-R[2][0], sqrt(R[2][1] * R[2][1] + R[2][2] * R[2][2]));
 //					double roll = atan2(R[2][1], R[2][2]);
 
 					cv::circle(video, cv::Point(det->c[0], det->c[1]), 10, cv::Scalar(255, 0, 0), cv::FILLED, cv::LINE_8);
 					cv::rectangle(video, cv::Point(det->p[0][0], det->p[0][1]), cv::Point(det->p[2][0], det->p[2][1]), cv::Scalar(0, 255, 255));
-					// couldnt fit yaw in radians and degrees so i just picked degrees
-					cv::putText(video, ("Tag: " + std::to_string(det->id) + " Yaw: " + std::to_string(yawDeg) + " deg").c_str(), cv::Point(det->c[0], det->c[1]), cv::FONT_HERSHEY_DUPLEX, 1.0, CV_RGB(255, 255, 255), 2);
+
+					cv::putText(video, ("D " + std::to_string(dist)).c_str(), cv::Point(det->c[0], det->c[1]), cv::FONT_HERSHEY_DUPLEX, 1.0, CV_RGB(255, 255, 255), 2);
 				}
 			}
 		}
