@@ -12,6 +12,8 @@
 #include <opencv2/opencv.hpp>
 #include <libfreenect/libfreenect.hpp>
 #include <apriltag/apriltag.h>
+#include <apriltag/apriltag_pose.h>
+#include <Eigen/Dense>
 #include <apriltag/tag16h5.h>
 
 int timeMS(){
@@ -313,12 +315,26 @@ int main(){
 					// degrees is type-casted for text spacing reasons, for accuracy use radians or a double for degrees
 					int yawDeg = yaw * (180/M_PI);
 
-					double tagPixelSize = std::max(abs(det->p[0][1] - det->p[1][1]), abs(det->p[1][0] - det->p[2][0]));
-
-					double dist = focalLength * (tagPhysicalSize/tagPixelSize);
-
 //					double pitch = atan2(-R[2][0], sqrt(R[2][1] * R[2][1] + R[2][2] * R[2][2]));
 //					double roll = atan2(R[2][1], R[2][2]);
+
+					apriltag_detection_info_t info;
+					info.det = det;
+					info.tagsize = tagPhysicalSize;
+					info.fx = focalLength;
+					info.fy = focalLength;
+					info.cx = 316.7;
+					info.cy = 238.5;
+
+					apriltag_pose_t pose;
+					estimate_pose_for_tag_homography(&info, &pose);
+
+					Eigen::Vector3d t;
+					for(int i = 0; i < 3; i++){
+						t(i) = pose.t->data[i];
+					}
+
+					double dist = t.norm();
 
 					cv::circle(video, cv::Point(det->c[0], det->c[1]), 10, cv::Scalar(255, 0, 0), cv::FILLED, cv::LINE_8);
 					cv::rectangle(video, cv::Point(det->p[0][0], det->p[0][1]), cv::Point(det->p[2][0], det->p[2][1]), cv::Scalar(0, 255, 255));
