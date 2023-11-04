@@ -31,17 +31,22 @@ int main(){
 	apriltag_detector_add_family_bits(td, tf, 1);
 
 	cv::Mat video;
-	cv::VideoCapture cap(0);
+	cv::VideoCapture cap(2);
+	if(!cap.isOpened()){
+		std::cerr << "Failed to open camera" << std::endl;
+		return -1;
+	}
+	
 	cv::Mat gray;
 
 	// the tags irl size in inches
 	const double tagPhysicalSize = 6.0;
 
-	// TODO update focalLength to be accurate to cam
-	const double camFocalLength = 525.0;
+	// TODO update focalLength to be accurate to cam (mm)
+	const double camFocalLength = 3.67;
 	// TODO update values to be accurate to cam
-	const double camCX = 0.0;
-	const double camCY = 0.0;
+	const double camCX = 1920*0.5;
+	const double camCY = 1080*0.5;
 
 	namedWindow("video", cv::WINDOW_AUTOSIZE);	
 
